@@ -1,0 +1,14 @@
+node_modules/
+dist/
+.env*
+!.env.example
+.vercel/
+
+public/ocr/
+
+/*.traineddata
+/*.traineddata.gz
+.runtime/
+.bill2sheet-data/
+public/models/
+public/handwriting-runtime/
