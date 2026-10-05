@@ -1,0 +1,6 @@
+import {useEffect,useRef} from 'react';
+export default function ExportReview({summary,onReview,onExport,onClose,busy}) {
+ const ref=useRef(null);
+ useEffect(()=>{ref.current?.focus();ref.current?.scrollIntoView({behavior:'smooth',block:'center'});},[]);
+ return <section ref={ref} tabIndex={-1} className="export-review" role="alert" aria-label="Check before export"><h3>Some photo details are not ready</h3>{summary.blank>0&&<p><strong>{summary.blank} photo{summary.blank===1?' has':'s have'} no name, date or amount entered.</strong> Photos with no readable data will be skipped in the export.</p>}{summary.pending>0&&<p>{summary.pending} photo{summary.pending===1?' is':'s are'} still waiting or reading.</p>}{summary.unchecked>0&&<p>{summary.unchecked} record{summary.unchecked===1?' needs':'s need'} checking against the photo. Saving a photo does not mean its handwriting was read successfully.</p>}<p>All fields remain optional. You can review the details or export the current values.</p><div className="form-actions"><button className="button primary" disabled={busy} onClick={onReview}>Review photo details</button><button className="button secondary" disabled={busy} onClick={onExport}>Export current values anyway</button><button className="button secondary" disabled={busy} onClick={onClose}>Cancel</button></div></section>;
+}

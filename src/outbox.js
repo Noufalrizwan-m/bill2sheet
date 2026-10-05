@@ -1,0 +1,6 @@
+const DB='bill2sheet-photo-outbox-v1';
+function open(){return new Promise((resolve,reject)=>{const request=indexedDB.open(DB,1);request.onupgradeneeded=()=>request.result.createObjectStore('photos',{keyPath:'id'});request.onsuccess=()=>resolve(request.result);request.onerror=()=>reject(new Error('Could not save photos on this phone. Try a smaller batch or allow browser storage.'));});}
+async function transaction(mode,action){const db=await open();try{return await new Promise((resolve,reject)=>{const tx=db.transaction('photos',mode);let result;const request=action(tx.objectStore('photos'));if(request)request.onsuccess=()=>{result=request.result;};tx.oncomplete=()=>resolve(result);tx.onerror=()=>reject(new Error('Could not save the selected photos. Free some device storage or choose a smaller batch.'));tx.onabort=()=>reject(new Error('Photo saving was interrupted. Please select the photos again.'));});}finally{db.close();}}
+export const listOutbox=()=>transaction('readonly',store=>store.getAll());
+export const queuePhotos=entries=>transaction('readwrite',store=>{for(const entry of entries)store.put(entry);});
+export const removeOutbox=id=>transaction('readwrite',store=>store.delete(id));

@@ -1,0 +1,11 @@
+import {readFileSync} from 'node:fs';
+import {loadLocalGeminiEnv} from '../server/local-env.js';
+import {createGeminiHandler} from '../api/read-voucher.js';
+const env=loadLocalGeminiEnv();
+const listing=await fetch('https://generativelanguage.googleapis.com/v1beta/models',{headers:{'x-goog-api-key':env.GEMINI_API_KEY},signal:AbortSignal.timeout(30000)});
+const data=await listing.json();
+const candidate='gemini-3.5-flash-lite';
+console.log(JSON.stringify({listingStatus:listing.status,alternativeListed:data.models?.some(m=>m.name===`models/${candidate}`),currentModelUnchanged:env.GEMINI_MODEL}));
+if(!listing.ok)process.exit(1);
+const started=Date.now();
+await createGeminiHandler({env:{...env,GEMINI_MODEL:candidate}})({method:'POST',headers:{},body:{image:readFileSync('/private/tmp/bill2sheet-gemini-test.jpg').toString('base64')}},{setHeader(){},end(raw){const safe=raw.split(env.GEMINI_API_KEY).join('[redacted]');console.log(JSON.stringify({testedModel:candidate,seconds:Math.round((Date.now()-started)/100)/10,status:this.statusCode,result:JSON.parse(safe)}));}});
