@@ -13,11 +13,11 @@ export function createGeminiHandler({env=process.env,request=fetch,wait=delay,ra
   const missing=['GEMINI_API_KEY','GEMINI_MODEL'].filter(name=>!env[name]?.trim());
   if(req.method==='GET')return respond(res,200,{configured:missing.length===0,variables:{GEMINI_API_KEY:!missing.includes('GEMINI_API_KEY'),GEMINI_MODEL:!missing.includes('GEMINI_MODEL')},missing,model,provider:'Gemini'});
   if(req.method!=='POST')return respond(res,405,{error:'Method not allowed.'});
-  if(req.headers.origin){try{if(new URL(req.headers.origin).host!==req.headers.host)return respond(res,403,{error:'Use Bill2Sheet to read a photo.'});}catch{return respond(res,403,{error:'Invalid origin.'});}}
+  if(req.headers.origin){try{if(new URL(req.headers.origin).host!==req.headers.host)return respond(res,403,{error:'Use VoucherQuill to read a photo.'});}catch{return respond(res,403,{error:'Invalid origin.'});}}
   if(missing.length)return respond(res,503,{error:`${missing.join(' and ')} ${missing.length===1?'is':'are'} missing on the server. Locally, check .env.local in the running project. On Vercel, add the variables for this deployment environment and redeploy.`,status:503,missing,pauseQueue:true});
   let image;
   try{const input=await body(req);image=input?.image;if(typeof image!=='string')throw new Error('image');image=image.replace(/^data:image\/jpeg;base64,/,'');if(!image||image.length>2_500_000||image.length%4!==0||!/^[A-Za-z0-9+/]+={0,2}$/.test(image))throw new Error('image');const bytes=Buffer.from(image,'base64');if(bytes.length<4||bytes[0]!==255||bytes[1]!==216||bytes[2]!==255)throw new Error('image');}
-  catch{return respond(res,400,{error:'Invalid photo. Upload a JPEG or use the camera/HEIC conversion in Bill2Sheet.'});}
+  catch{return respond(res,400,{error:'Invalid photo. Upload a JPEG or use the camera/HEIC conversion in VoucherQuill.'});}
   const controller=new AbortController();
   const closed=()=>{if(!res.writableEnded)controller.abort();};
   res.on?.('close',closed);

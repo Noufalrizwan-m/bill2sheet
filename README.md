@@ -1,4 +1,6 @@
-# Bill2Sheet — Gemini voucher reader
+# VoucherQuill — Snap. Check. Sheet.
+
+Previously named Bill2Sheet. Existing browser storage keys are retained so saved sheets and photos remain available on the same origin.
 
 React + Vite + Tailwind; server-only Gemini vision; IndexedDB photo queue/register; editable Excel and PDF exports. Only the foreground voucher is requested. All fields are optional. AI output must be checked against the photo; exact handwriting is not guaranteed.
 

@@ -26,7 +26,7 @@ export async function createVoucherExcelBytes(records){
  const XLSX=await import('xlsx');
  return centerWorkbook(XLSX.write(await createVoucherWorkbook(records),{type:'array',bookType:'xlsx'}));
 }
-const exportName=name=>(name||'Bill2Sheet').replace(/[\\/:*?"<>|]/g,'-');
+const exportName=name=>(name||'VoucherQuill').replace(/[\\/:*?"<>|]/g,'-');
 export async function downloadVoucherExcel(records,name){
  const bytes=await createVoucherExcelBytes(records);
  const url=URL.createObjectURL(new Blob([bytes],{type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'}));
@@ -35,7 +35,7 @@ export async function downloadVoucherExcel(records,name){
 export async function createVoucherPDF(records) {
   const [{jsPDF},{default:autoTable}]=await Promise.all([import('jspdf'),import('jspdf-autotable')]);
   const bills=sortBills(records.filter(hasVoucherData)),doc=new jsPDF({orientation:'landscape',format:'a4'});
-  autoTable(doc,{startY:30,margin:{top:30,bottom:18},head:[voucherHeaders],body:bills.map((b,i)=>[i+1,b.vendor||'',b.date||b.source_date||'',Number.isFinite(b.total)?b.total.toFixed(2):'',b.particulars||'',reviewNotes(b)]),foot:[['',hasNumericAmounts(bills)?'GRAND TOTAL':'NO AMOUNTS ENTERED','',hasNumericAmounts(bills)?grandTotal(bills).toFixed(2):'','','']],showFoot:'lastPage',styles:{fontSize:9,cellPadding:3,halign:'center',valign:'middle'},columnStyles:{4:{cellWidth:55},5:{cellWidth:65}},headStyles:{fillColor:[34,79,65]},didDrawPage(){doc.setFontSize(19);doc.text('Bill2Sheet · Payment vouchers',148.5,17,{align:'center'});doc.setFontSize(9);doc.text('Amounts in AED. Check unreviewed handwriting against the original photo.',148.5,23,{align:'center'});}});
+  autoTable(doc,{startY:30,margin:{top:30,bottom:18},head:[voucherHeaders],body:bills.map((b,i)=>[i+1,b.vendor||'',b.date||b.source_date||'',Number.isFinite(b.total)?b.total.toFixed(2):'',b.particulars||'',reviewNotes(b)]),foot:[['',hasNumericAmounts(bills)?'GRAND TOTAL':'NO AMOUNTS ENTERED','',hasNumericAmounts(bills)?grandTotal(bills).toFixed(2):'','','']],showFoot:'lastPage',styles:{fontSize:9,cellPadding:3,halign:'center',valign:'middle'},columnStyles:{4:{cellWidth:55},5:{cellWidth:65}},headStyles:{fillColor:[36,60,75]},didDrawPage(){doc.setFontSize(19);doc.text('VoucherQuill · Payment vouchers',148.5,17,{align:'center'});doc.setFontSize(9);doc.text('Amounts in AED. Check unreviewed handwriting against the original photo.',148.5,23,{align:'center'});}});
   for(let page=1;page<=doc.getNumberOfPages();page++){doc.setPage(page);doc.text(`${page} / ${doc.getNumberOfPages()}`,280,202,{align:'right'});}
   return doc;
 }
