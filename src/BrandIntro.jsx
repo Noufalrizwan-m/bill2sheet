@@ -1,39 +1,16 @@
-import { ArrowDown, Camera, Feather, FileSpreadsheet, ScanLine, CheckCheck, RotateCcw, Layers3 } from 'lucide-react';
+import { ArrowUpRight, Camera, Feather, FileSpreadsheet, ScanLine, CheckCheck, RotateCcw, Layers3 } from 'lucide-react';
 
 const features = [
-  [Camera, 'Capture a whole batch', 'Take a photo or add multiple images, including HEIC. Vouchers are read one at a time.'],
-  [ScanLine, 'Keep the photo in view', 'Compare extracted details with the voucher. Crop, rotate, retry, or enter missing details yourself.'],
-  [CheckCheck, 'Check before you export', 'Review uncertain fields and row-total mismatches. Edit amounts and dates with no required fields.'],
-  [Layers3, 'Give each register a home', 'Create named sheets and keep your photos and records saved in this browser.'],
-  [RotateCcw, 'Pick up where you paused', 'Stop and resume processing. Failed readings keep their photos so you can retry.'],
-  [FileSpreadsheet, 'Take your work with you', 'Download editable Excel with line items, or a PDF summary. Your saved register stays here.'],
+  [Camera, 'A photo or a whole batch', 'Capture a voucher or select multiple images, including HEIC. Each photo gets its own place in your register.'],
+  [ScanLine, 'The original stays close', 'Compare every reading with its photo. Crop, rotate, or retry when a detail needs a second look.'],
+  [CheckCheck, 'You have the final say', 'Uncertain fields and total mismatches are flagged. Edit any detail; no field is mandatory.'],
+  [Layers3, 'A sheet for every project', 'Organize your work in named sheets. Photos and records stay saved in this browser.'],
+  [RotateCcw, 'Room for interruptions', 'Pause and resume reading. Failed readings keep their photos so you can try again.'],
+  [FileSpreadsheet, 'Ready for your next step', 'Export editable Excel with line items, or a PDF summary. Downloading keeps your register intact.'],
 ];
 
-export function QuillMark() {
-  return <span className="brand-mark" aria-hidden="true"><Feather size={25}/></span>;
-}
+export function QuillMark(){return <span className="brand-mark" aria-hidden="true"><Feather size={23}/></span>;}
 
-export default function BrandIntro() {
-  return <>
-    <section className="quill-intro" aria-labelledby="intro-title">
-      <div className="quill-intro-copy">
-        <span className="eyebrow">THE VOUCHER-TO-EXCEL WORKSPACE</span>
-        <h1 id="intro-title">Paper has a story.<br/><em>Give it a spreadsheet.</em></h1>
-        <p>Turn voucher photos into a register you can check, edit, and keep. From handwritten details to Excel rows—with your review in between.</p>
-        <a className="button primary" href="#capture">Add your first—or next—voucher <ArrowDown size={17}/></a>
-        <span className="intro-caption">Snap. Check. Sheet.</span>
-      </div>
-      <div className="paper-process" aria-label="Workflow illustration: capture a voucher, review its details, export a sheet">
-        <div className="paper-heading"><Feather size={18}/><span>THE PAPER TRAIL, REIMAGINED</span></div>
-        <div className="paper-slip"><span className="paper-stamp">01 / CAPTURE</span><strong>Payment voucher</strong><span className="ink-line"/><span className="ink-line short"/><span className="handwritten">Every detail starts here.</span></div>
-        <div className="paper-review"><CheckCheck size={20}/><div><b>02 / CHECK</b><span>Your photo. Your final say.</span></div></div>
-        <div className="paper-sheet"><span className="paper-stamp">03 / EXPORT</span><div className="sheet-illustration"><span>PAID TO</span><span>DATE</span><span>AMOUNT</span><span>Reviewed</span><span>By you</span><span>Ready</span></div><span className="paper-formats">EXCEL + PDF <FileSpreadsheet size={17}/></span></div>
-        <span className="illustration-note">A little less typing. A clearer paper trail.</span>
-      </div>
-    </section>
-    <details className="quill-features">
-      <summary><span>Built for the work between photo and spreadsheet</span><span className="feature-toggle">Explore 6 features <span aria-hidden="true">+</span></span></summary>
-      <div className="feature-grid">{features.map(([Icon,title,description])=><article key={title}><Icon size={23} aria-hidden="true"/><h3>{title}</h3><p>{description}</p></article>)}</div>
-    </details>
-  </>;
-}
+export function FeatureGuide(){return <section id="features" className="feature-guide" aria-labelledby="feature-title"><div className="guide-heading"><div><span className="eyebrow">A LITTLE LESS PAPERWORK</span><h2 id="feature-title">Thoughtful at every step.</h2></div><p>From the first photo to the final spreadsheet.</p></div><div className="feature-grid">{features.map(([Icon,title,description],index)=><article key={title}><div className="feature-icon"><Icon size={21}/><span>0{index+1}</span></div><h3>{title}</h3><p>{description}</p></article>)}</div></section>;}
+
+export default function BrandIntro(){return <section className="quill-intro" aria-labelledby="intro-title"><div className="quill-intro-copy"><span className="eyebrow"><span className="tiny-line"/> FROM PAPER TO POSSIBILITY</span><h1 id="intro-title">Less paperwork.<br/><em>More breathing room.</em></h1><p>Turn voucher photos into a clear, editable register.<br className="desktop-break"/> You check the details. We keep the rows in order.</p><div className="intro-links"><a className="button primary" href="#capture">Start with a photo <ArrowUpRight size={18}/></a><a className="text-link" href="#features">Explore the features <span aria-hidden="true">↗</span></a></div><div className="intro-tags"><span><CheckCheck size={14}/> Review before export</span><span><FileSpreadsheet size={14}/> Excel &amp; PDF</span></div></div><div className="paper-composition" aria-label="Illustration of a voucher becoming an organized spreadsheet"><div className="orbit orbit-one"/><div className="orbit orbit-two"/><span className="composition-label">A SMALL TRANSFORMATION</span><div className="illustrated-voucher"><div className="receipt-top"><Feather size={19}/><span>01 / THE ORIGINAL</span></div><strong>Payment<br/>voucher.</strong><div className="receipt-lines"><i/><i/><i/></div><span className="handwritten">a little clarity, please.</span><div className="receipt-bottom">PHOTO → POSSIBILITIES</div></div><span className="transfer-arrow" aria-hidden="true">↘</span><div className="illustrated-sheet"><div className="sheet-mini-title"><span className="mini-icon"><FileSpreadsheet size={17}/></span><div>Your next spreadsheet<small>02 / REVIEWED BY YOU</small></div><CheckCheck size={17}/></div><div className="mini-grid"><b>PAID TO</b><b>DATE</b><b>AMOUNT</b>{Array.from({length:9},(_,i)=><span key={i}><i/></span>)}</div><div className="sheet-mini-footer"><span className="status-dot"/> A place for every detail.</div></div><span className="composition-caption">Snap. Check. Sheet.</span></div></section>;}

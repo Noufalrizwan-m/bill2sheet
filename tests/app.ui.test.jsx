@@ -31,3 +31,29 @@ test('camera return appends automatically once; next photo adds another; reopeni
  await waitFor(()=>expect(state.rows[0].total).toBe(null));
  expect(state.rows[0].vendor).toBe(null);
 });
+
+test('register filters separate checked, unreviewed and queued vouchers',async()=>{
+ state.rows=[
+  {...emptyBill(),id:'checked',vendor:'Checked supplier',status:'saved',reviewed:true,total:20,date:'28-10-2026'},
+  {...emptyBill(),id:'review',vendor:'Review supplier',status:'saved',reviewed:false,total:30,date:'28-10-2026'},
+  {...emptyBill(),id:'queued',vendor:'Queued supplier',status:'queued',reviewed:false},
+ ];
+ render(<App/>);
+ await screen.findByText('Checked supplier');
+ fireEvent.click(screen.getByRole('button',{name:/Needs review/}));
+ expect(screen.getByText('Review supplier')).toBeTruthy();
+ expect(screen.queryByText('Queued supplier')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:/Reading, 1 vouchers/}));
+ expect(screen.getByText('Queued supplier')).toBeTruthy();
+ expect(screen.queryByText('Review supplier')).toBeNull();
+ fireEvent.click(screen.getByRole('button',{name:/All vouchers/}));
+ expect(screen.getByText('Checked supplier')).toBeTruthy();
+});
+
+test('dropping a photo saves it through the existing photo queue',async()=>{
+ render(<App/>);
+ const capture=screen.getByRole('heading',{name:'Add the next voucher'}).closest('section');
+ fireEvent.drop(capture,{dataTransfer:{files:[new File(['photo'],'dropped.jpg',{type:'image/jpeg'})]}});
+ await waitFor(()=>expect(state.rows).toHaveLength(1));
+ expect(state.rows[0].filename).toBe('dropped.jpg');
+});
