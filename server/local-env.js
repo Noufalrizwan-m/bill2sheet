@@ -4,7 +4,7 @@ import {join} from 'node:path';
 import {parseEnv} from 'node:util';
 
 export const projectRoot=fileURLToPath(new URL('../',import.meta.url));
-const names=['GEMINI_API_KEY','GEMINI_MODEL','GEMINI_FALLBACK_MODEL'];
+const names=['GEMINI_API_KEY','GEMINI_MODEL','GEMINI_FALLBACK_MODEL','VOUCHERQUILL_ACCESS_PASSWORD','VOUCHERQUILL_SESSION_SECRET'];
 
 // Local tooling only: never imported by the browser or the deployed function.
 // A nonempty .env.local value wins over an inherited shell value locally.

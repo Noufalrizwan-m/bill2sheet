@@ -12,3 +12,10 @@ public/ocr/
 .bill2sheet-data/
 public/models/
 public/handwriting-runtime/
+
+# Private key exports and local diagnostic logs
+*.pem
+*.p12
+*.pfx
+*.key
+*.log

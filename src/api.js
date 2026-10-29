@@ -48,6 +48,7 @@ async function drain() {
         try{response=await fetch('/api/read-voucher',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(240000)])});}
         catch{throw Object.assign(new Error('Gemini connection interrupted. Photo saved; retry when online.'),{pauseQueue:true});}
         let data;try{data=await response.json();}catch{throw Object.assign(new Error(`Server HTTP ${response.status}: invalid JSON response. Retry when the server is available.`),{pauseQueue:true});}
+        if(data.authenticationRequired)window.dispatchEvent(new Event('voucherquill-auth-required'));
         if(!response.ok)throw Object.assign(new Error(`Gemini ${data.status||response.status}: ${data.error||'Reading failed'}`),{pauseQueue:data.pauseQueue});
         if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
         const result=mapGeminiVoucher(data);

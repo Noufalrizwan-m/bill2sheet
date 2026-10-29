@@ -1,6 +1,6 @@
 import test from 'node:test';import assert from 'node:assert/strict';
 import {Readable} from 'node:stream';
-import {createGeminiHandler} from '../api/read-voucher.js';
+import {createGeminiHandler} from './helpers/local-reader.js';
 import {mapGeminiVoucher} from '../shared/gemini.js';
 import {createVoucherWorkbook} from '../shared/voucher-export.js';
 const GEMINI_MODEL='gemini-3.6-flash';

@@ -6,7 +6,7 @@ React + Vite + Tailwind; server-only Gemini vision; IndexedDB photo queue/regist
 
 ## Configure privately
 
-Install Node.js 22.12 or later. Open a terminal in this folder and run `npm install`. Create `.env.local` (or edit the existing file; do not overwrite a working key):
+Install Node.js 22.13 or later. Open a terminal in this folder and run `npm install`. Create `.env.local` (or edit the existing file; do not overwrite a working key):
 
 ```dotenv
 GEMINI_API_KEY=your_private_AI_Studio_key
@@ -31,11 +31,11 @@ HTTP 200 means the request succeeded. Otherwise Google returns its actual error:
 npm run dev -- --host 0.0.0.0 --port 5173
 ```
 
-Vite's server middleware runs the exact `/api/read-voucher` handler locally; no separate proxy or backend command is needed. Restart once after installing this update. The local API then rereads `.env.local` for each request. On the Mac open http://localhost:5173. On the iPhone, connect to the same Wi-Fi and open the Network URL Vite prints (for example http://192.168.1.242:5173). Use the actual printed port. The Mac must stay running for this local URL. File-input camera capture works without relying on getUserMedia. Allow local-network/firewall access if prompted.
+Vite's server middleware runs the exact `/api/read-voucher` handler locally; no separate proxy or backend command is needed. Restart once after installing this update. The local API then rereads `.env.local` for each request. On the Mac open http://localhost:5173. On the iPhone, use your HTTPS deployment and sign in with the owner access password. The old plain-HTTP Wi-Fi URL cannot perform photo reading after the security update below. File-input camera capture works without relying on getUserMedia.
 
 ## Vercel
 
-Set the Vercel project Root Directory to `bill2sheet` (or the folder containing this package.json). Use Vite, build `npm run build`, output `dist`. Add GEMINI_API_KEY and GEMINI_MODEL in Vercel Settings → Environment Variables for the intended environment, then redeploy. `.env.local` is not uploaded. `/api/read-voucher.js` is the sole server function. Use the deployed HTTPS address on your phone; it does not require the Mac to stay on. This edit does not itself deploy your project.
+Set the Vercel project Root Directory to `bill2sheet` (or the folder containing this package.json). Use Vite, build `npm run build`, output `dist`. Add GEMINI_API_KEY and GEMINI_MODEL in Vercel Settings → Environment Variables for the intended environment, then redeploy. `.env.local` is not uploaded. `/api/read-voucher.js` reads vouchers and `/api/session.js` manages owner access. Use the deployed HTTPS address on your phone; it does not require the Mac to stay on. This edit does not itself deploy your project.
 
 ## Flow and review
 
@@ -101,3 +101,20 @@ Requests use thinkingConfig.thinkingLevel low, maxOutputTokens 2000, temperature
 The client reads one voucher at a time, with 2–3 seconds between jobs. Exhausted busy/quota failures remain in Retry failed, while later jobs continue. Authentication/model-configuration failures pause the queue. Use Retry failed photos to queue failures again; Stop processing still preserves originals and prevents further work. Closing/stopping the client aborts server retries when the HTTP connection closes; work already received by Google may still finish.
 
 Restart the local server once after this update, then refresh the phone. Subsequent private environment edits are loaded on each request.
+
+## Owner access and API key protection (29 October 2026)
+
+The public page can be viewed without signing in. Hosted photo reading now requires an
+owner access password and encrypted session; the Gemini key stays on the server.
+Set `VOUCHERQUILL_ACCESS_PASSWORD` (16-256 characters) and a separate
+`VOUCHERQUILL_SESSION_SECRET` (32-256 characters) privately in the hosting environment,
+then redeploy. Do not reuse the Gemini key. No public signup is enabled.
+
+Direct local use through `localhost` on this Mac remains available. Phone access over
+plain Wi-Fi HTTP is now locked for reading; use the HTTPS deployment to sign in.
+Unconfigured deployments keep photo reading locked while editing and export remain usable.
+
+`npm run build` now checks public assets and browser bundles for credentials. See
+[SECURITY.md](SECURITY.md) for the audit, limits, and remaining deployment checks.
+Application rate counters are per process; configure shared edge/WAF limits for public
+hosting. They are not an account-wide quota or a substitute for provider billing controls.

@@ -4,25 +4,25 @@ import {mkdtempSync,writeFileSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {loadLocalGeminiEnv} from '../server/local-env.js';
-import {createGeminiHandler} from '../api/read-voucher.js';
+import {createGeminiHandler} from './helpers/local-reader.js';
 
 test('local server loads explicit project file, ignores empty shell overrides, reloads edits',()=>{
  const root=mkdtempSync(join(tmpdir(),'bill2sheet-env-'));
  try{
   writeFileSync(join(root,'.env.local'),'GEMINI_API_KEY=fixture-secret\nGEMINI_MODEL=fixture-model\n');
   const env=loadLocalGeminiEnv({root,inherited:{GEMINI_API_KEY:'',GEMINI_MODEL:'stale-shell-model'}});
-  assert.deepEqual(env,{GEMINI_API_KEY:'fixture-secret',GEMINI_MODEL:'fixture-model',GEMINI_FALLBACK_MODEL:''});
+  assert.deepEqual(env,{GEMINI_API_KEY:'fixture-secret',GEMINI_MODEL:'fixture-model',GEMINI_FALLBACK_MODEL:'',VOUCHERQUILL_ACCESS_PASSWORD:'',VOUCHERQUILL_SESSION_SECRET:''});
   writeFileSync(join(root,'.env.local'),'GEMINI_API_KEY=replaced-fixture\nGEMINI_MODEL=fixture-model\n');
   assert.equal(loadLocalGeminiEnv({root,inherited:{}}).GEMINI_API_KEY,'replaced-fixture');
  }finally{rmSync(root,{recursive:true,force:true});}
 });
 test('missing file uses server environment; whitespace settings count as missing',()=>{
  const root=mkdtempSync(join(tmpdir(),'bill2sheet-env-'));
- try{assert.deepEqual(loadLocalGeminiEnv({root,inherited:{GEMINI_API_KEY:'  ',GEMINI_MODEL:'configured-model'}}),{GEMINI_API_KEY:'',GEMINI_MODEL:'configured-model',GEMINI_FALLBACK_MODEL:''});}
+ try{assert.deepEqual(loadLocalGeminiEnv({root,inherited:{GEMINI_API_KEY:'  ',GEMINI_MODEL:'configured-model'}}),{GEMINI_API_KEY:'',GEMINI_MODEL:'configured-model',GEMINI_FALLBACK_MODEL:'',VOUCHERQUILL_ACCESS_PASSWORD:'',VOUCHERQUILL_SESSION_SECRET:''});}
  finally{rmSync(root,{recursive:true,force:true});}
 });
 test('configuration endpoint and 503 expose variable names and booleans only',async()=>{
- for(const env of [{},{GEMINI_API_KEY:'fixture-secret'},{GEMINI_MODEL:'fixture-model'},{GEMINI_API_KEY:'fixture-secret',GEMINI_MODEL:'fixture-model',GEMINI_FALLBACK_MODEL:''}]){
+ for(const env of [{},{GEMINI_API_KEY:'fixture-secret'},{GEMINI_MODEL:'fixture-model'},{GEMINI_API_KEY:'fixture-secret',GEMINI_MODEL:'fixture-model',GEMINI_FALLBACK_MODEL:'',VOUCHERQUILL_ACCESS_PASSWORD:'',VOUCHERQUILL_SESSION_SECRET:''}]){
   const response=()=>({setHeader(){},end(text){this.raw=text;this.data=JSON.parse(text);}});
   const handler=createGeminiHandler({env,request:()=>{throw Error('No provider call expected');}});
   const status=response();await handler({method:'GET',headers:{}},status);

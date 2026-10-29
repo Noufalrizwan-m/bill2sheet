@@ -1,0 +1,15 @@
+I built VoucherQuill for a small personal problem: turning handwritten payment vouchers into Excel records without typing every detail again.
+
+The flow is simple: take a photo, review the extracted details against the original, make corrections, and export to Excel or PDF.
+
+Along the way, I added batch uploads, separate saved sheets, crop and rotate tools, and retries for failed readings. I also had some fun with a paper-toss opening animation.
+
+This is a personal prototype, and I’m still learning about data sharing and privacy. The current version sends photos to Google Gemini for reading and saves the register in the browser. The example shown here uses fictional data; the before/after graphic is an AI-generated illustration, not an accuracy benchmark.
+
+Handwriting still needs a human check. In a future version, I want to improve recognition, make the experience smoother, and give users clearer information and choices about how their data is handled.
+
+Built with React, Vite, and Gemini, with AI assistance during development.
+
+What would make a tool like this useful in your everyday work?
+
+#BuildInPublic #PersonalProject #React #AI #Automation

@@ -17,11 +17,11 @@ export default function PaperToss(){
   },[visible,ready]);
   if(!visible)return null;
   return <div className="paper-toss" data-ready={ready}>
-    <button className="toss-skip" onClick={()=>setVisible(false)}>Skip intro</button>
-    <div className="toss-caption" aria-hidden="true"><span>VoucherQuill</span><p>Enough with the paperwork.</p><small>Let’s put it in order.</small></div>
+
+    <div className="toss-caption" aria-hidden="true"><p>Let’s sort these out.</p></div>
     <div className="toss-stage" aria-hidden="true">
       <div className="toss-hand"><img className="toss-hand-grip" src="/images/paper-toss-hand-grip.png" alt="" draggable="false" onLoad={()=>setLoaded(n=>n+1)} onError={()=>setVisible(false)}/><img className="toss-hand-open" src="/images/paper-toss-hand-3d.png" alt="" draggable="false" onLoad={()=>setLoaded(n=>n+1)} onError={()=>setVisible(false)}/></div>
-      {trajectories.map(([x,y,rotation,flutter],i)=><div key={i} className={`toss-flight ${i%3===0?'toss-flight-rear':''}`} style={{'--fly-x':`${x}vw`,'--fly-y':`${y}vh`,'--rotation':`${rotation}deg`,'--flutter':`${flutter}deg`,'--delay':`${i*35}ms`,'--stack':`${i*-2}deg`,'--depth':`${i%3===0?-100:90}px`}}><div className="toss-paper"><span className="toss-paper-title">PAYMENT VOUCHER</span><span className="toss-rule"/><span className="toss-rule"/><span className="toss-rule short"/><span className="toss-scribble">check again!</span><div className="toss-paper-grid"/><span className="toss-paper-number">0{i+1}</span></div></div>)}
+      {trajectories.map(([x,y,rotation,flutter],i)=><div key={i} className={`toss-flight ${i%3===0?'toss-flight-rear':''}`} style={{'--fly-x':`${x}vw`,'--fly-y':`${y}vh`,'--rotation':`${rotation}deg`,'--flutter':`${flutter}deg`,'--delay':`${i*35}ms`,'--stack':`${i*-2}deg`,'--depth':`${i%3===0?-100:90}px`}}><div className="toss-paper"><span className="toss-rule"/><span className="toss-rule"/><span className="toss-rule short"/><span className="toss-scribble">check again!</span><div className="toss-paper-grid"/></div></div>)}
     </div>
   </div>;
 }
