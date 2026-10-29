@@ -3,7 +3,7 @@ import {Readable} from 'node:stream';
 import {createGeminiHandler} from './helpers/local-reader.js';
 import {mapGeminiVoucher} from '../shared/gemini.js';
 import {createVoucherWorkbook} from '../shared/voucher-export.js';
-const GEMINI_MODEL='gemini-3.6-flash';
+const GEMINI_MODEL='gemini-3.5-flash-lite';
 const voucher={voucher_date:'27-06-2026',paid_to:'Gas Both Camp',particulars:null,row_amounts:[1725],total:1725,unclear:[]};
 const image=Buffer.from([255,216,255,224,0,16,255,217]).toString('base64');
 const res=()=>({setHeader(){},end(text){this.data=JSON.parse(text);}});

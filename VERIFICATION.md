@@ -7,7 +7,7 @@
 - Multipart output tests include thoughtSignature-only parts, text with extra metadata, whitespace, temperature 0 and an output budget of at least 2000 tokens. Runtime budget remains 8192.
 - Provider tests use mocked Gemini responses: arbitrary configured models, missing settings, Google HTTP error/message preservation, JSON schema validation, request limits and queue pause/resume.
 - Storage/export tests cover 100 photos, reopen persistence, blank export exclusion, numeric zero, review notes, mismatches, Excel round-trip and multi-page PDF.
-- User reports a successful live curl test (HTTP 200, modelVersion gemini-3.6-flash). This verifies key/model access, not voucher accuracy. No live voucher request was performed in this turn.
+- An earlier live curl check reported HTTP 200 for a previously configured model. The current configuration uses gemini-3.5-flash-lite; it has not been live-tested as part of this configuration update. The earlier result verifies past key/model access, not current handwriting accuracy.
 - Physical iPhone camera/HEIC, visual browser layout and deployed Vercel behavior were not verified in this turn. No deployment was performed.
 - Photos with no extracted data remain recoverable photo jobs, not successful vouchers; export filters them out.
 - Two-digit years require manual century confirmation. AI output is unreviewed until the user checks it.

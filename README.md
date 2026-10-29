@@ -10,10 +10,10 @@ Install Node.js 22.13 or later. Open a terminal in this folder and run `npm inst
 
 ```dotenv
 GEMINI_API_KEY=your_private_AI_Studio_key
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-No VITE_ prefix. Never commit or paste the key into chat. Both settings are required; there is no hard-coded model, allowlist or paid/provider fallback. The model above is documented at https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash . Check your project's model access and quota. Model availability does not guarantee free access; keep billing disabled if you only want free quota.
+No VITE_ prefix. Never commit or paste the key into chat. Both settings are required; there is no hard-coded model, allowlist or paid/provider fallback. The model above is documented at https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite . Check your project's model access and quota. Model availability does not guarantee free access; keep billing disabled if you only want free quota.
 
 ## Test key and model before starting
 
@@ -89,7 +89,7 @@ Official reference: https://vercel.com/docs/environment-variables
 Optional `.env.local` setting:
 
 ```dotenv
-GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODEL=
 ```
 
 Keep the existing GEMINI_API_KEY and GEMINI_MODEL. An empty/missing fallback means all attempts use the primary. No model is silently selected by the code. Both models use the same key and their respective project quotas.

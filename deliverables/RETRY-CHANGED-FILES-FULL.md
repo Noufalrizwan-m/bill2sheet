@@ -84,7 +84,7 @@ export function loadLocalGeminiEnv({root=projectRoot,inherited=process.env}={}){
 ````example
 # Server only. Never use a VITE_ prefix.
 GEMINI_API_KEY=
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 
 # Optional. Leave blank to retry only GEMINI_MODEL.
 GEMINI_FALLBACK_MODEL=
@@ -299,7 +299,7 @@ import {Readable} from 'node:stream';
 import {createGeminiHandler} from '../api/read-voucher.js';
 import {mapGeminiVoucher} from '../shared/gemini.js';
 import {createVoucherWorkbook} from '../shared/voucher-export.js';
-const GEMINI_MODEL='gemini-3.6-flash';
+const GEMINI_MODEL='gemini-3.5-flash-lite';
 const voucher={voucher_date:'27-06-2026',paid_to:'Gas Both Camp',particulars:null,row_amounts:[1725],total:1725,unclear:[]};
 const image=Buffer.from([255,216,255,224,0,16,255,217]).toString('base64');
 const res=()=>({setHeader(){},end(text){this.data=JSON.parse(text);}});
@@ -504,10 +504,10 @@ Install Node.js 22.12 or later. Open a terminal in this folder and run `npm inst
 
 ```dotenv
 GEMINI_API_KEY=your_private_AI_Studio_key
-GEMINI_MODEL=gemini-3.6-flash
+GEMINI_MODEL=gemini-3.5-flash-lite
 ```
 
-No VITE_ prefix. Never commit or paste the key into chat. Both settings are required; there is no hard-coded model, allowlist or paid/provider fallback. The model above is documented at https://ai.google.dev/gemini-api/docs/models/gemini-3.6-flash . Check your project's model access and quota. Model availability does not guarantee free access; keep billing disabled if you only want free quota.
+No VITE_ prefix. Never commit or paste the key into chat. Both settings are required; there is no hard-coded model, allowlist or paid/provider fallback. The model above is documented at https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite . Check your project's model access and quota. Model availability does not guarantee free access; keep billing disabled if you only want free quota.
 
 ## Test key and model before starting
 
@@ -583,7 +583,7 @@ Official reference: https://vercel.com/docs/environment-variables
 Optional `.env.local` setting:
 
 ```dotenv
-GEMINI_FALLBACK_MODEL=gemini-3.5-flash-lite
+GEMINI_FALLBACK_MODEL=
 ```
 
 Keep the existing GEMINI_API_KEY and GEMINI_MODEL. An empty/missing fallback means all attempts use the primary. No model is silently selected by the code. Both models use the same key and their respective project quotas.
