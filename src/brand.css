@@ -19,3 +19,19 @@ html{scroll-behavior:smooth;scroll-padding-top:90px}body{min-width:320px}button,
 .sidebar-note p,.sidebar-bottom,.field>span,.sheet-picker>p,.quick-capture>.form-note,.stat small,.register-subtitle,.sheet-footer,.feature-grid p,.guide-heading>p,.app-footer,.empty-sheet p{color:#6d7b64}
 .feature-grid p{font-size:12px}.feature-grid h3{font-size:13px}.sheet-picker>p,.quick-capture>.form-note,.stat small,.sheet-footer{font-size:11px}.register-subtitle{font-size:12px}.drop-message h3{font-size:14px}.quick-capture .drop-message p{font-size:12px;color:#758467}.field>span{font-size:11px}.stat>span{font-size:12px}.register-filters button{font-size:11px}.search-box input{font-size:12px}.empty-sheet p{font-size:12px}.sheet-heading .eyebrow{color:#748367}
 @media(max-width:700px){.search-box input{font-size:16px}.register-filters button{font-size:10px}.drop-message h3{font-size:13px}.quick-capture .drop-message p{font-size:11px}.feature-grid p{font-size:12px}}
+/* Keep native selection behavior while giving the control consistent insets. */
+.sheet-select-control{position:relative;display:block;width:100%;min-width:0}
+.sheet-select-control>select{appearance:none;-webkit-appearance:none;display:block;width:100%;height:44px;min-height:44px;padding:10px 42px 10px 12px;text-align:left;line-height:22px;text-overflow:ellipsis;white-space:nowrap;overflow:hidden;cursor:pointer}
+.sheet-select-control>svg{position:absolute;right:14px;top:50%;transform:translateY(-50%);pointer-events:none;color:var(--ink)}
+.sheet-picker input{height:44px;min-height:44px;padding:10px 12px;line-height:22px}
+.sheet-picker .field{justify-content:flex-start}
+.new-sheet-form{min-width:0}
+.desk-inputs>.panel{min-width:0}
+@media(max-width:700px){
+ .sheet-picker{grid-template-columns:minmax(0,1fr);gap:18px;padding:21px}
+ .sheet-picker .card-heading,.sheet-picker>p{grid-column:auto}
+ .sheet-picker>.field{justify-content:flex-start}
+ .new-sheet-form{grid-template-columns:minmax(0,1fr) auto;align-items:end;gap:10px}
+ .new-sheet-form .button{height:44px;min-height:44px;padding:10px 12px;font-size:11px}
+}
+@media(max-width:420px){.new-sheet-form{grid-template-columns:minmax(0,1fr)}.new-sheet-form .button{width:100%}}
