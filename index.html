@@ -1,2 +1,49 @@
 <!doctype html>
-<html lang="en"><head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width, initial-scale=1.0"/><meta name="theme-color" content="#1c1c1c"/><meta name="description" content="VoucherQuill turns voucher photos into editable Excel records. Capture batches, review details, organize saved sheets, and export Excel or PDF."/><link rel="icon" type="image/svg+xml" href="/favicon.svg"/><title>VoucherQuill — Snap. Check. Sheet.</title></head><body><div id="root"></div><script type="module" src="/src/main.jsx"></script></body></html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="theme-color" content="#1c1c1c"/>
+    <script>
+      // A refresh starts at the hero; ordinary section links keep their anchors.
+      if (performance.getEntriesByType('navigation')[0]?.type === 'reload') {
+        const previousRestoration = history.scrollRestoration;
+        history.scrollRestoration = 'manual';
+        if (location.hash) history.replaceState(history.state, '', location.pathname + location.search);
+        window.scrollTo(0, 0);
+        window.addEventListener('pageshow', () => {
+          requestAnimationFrame(() => {
+            window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+            history.scrollRestoration = previousRestoration;
+          });
+        }, { once: true });
+      }
+    </script>
+    <title>VoucherQuill — Handwritten Vouchers to Excel</title>
+    <meta name="description" content="VoucherQuill helps turn handwritten voucher photos into editable Excel records. Review the details, organize saved sheets, and export Excel or PDF. Photo reading requires owner access."/>
+    <link rel="canonical" href="https://voucherquill.vercel.app/"/>
+    <meta property="og:type" content="website"/>
+    <meta property="og:site_name" content="VoucherQuill"/>
+    <meta property="og:title" content="VoucherQuill — Handwritten Vouchers to Excel"/>
+    <meta property="og:description" content="From handwritten vouchers to editable spreadsheets. Add a photo, check the details, and export to Excel or PDF."/>
+    <meta property="og:url" content="https://voucherquill.vercel.app/"/>
+    <meta name="twitter:card" content="summary"/>
+    <meta name="twitter:title" content="VoucherQuill — Handwritten Vouchers to Excel"/>
+    <meta name="twitter:description" content="A personal tool for turning handwritten vouchers into spreadsheets, with human review."/>
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg"/>
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "WebSite",
+        "name": "VoucherQuill",
+        "alternateName": "Voucher Quill",
+        "url": "https://voucherquill.vercel.app/",
+        "description": "A personal tool for turning handwritten voucher photos into editable Excel records with human review."
+      }
+    </script>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
