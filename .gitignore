@@ -1,5 +1,8 @@
 node_modules/
 dist/
+.DS_Store
+# Local screenshots, posting assets, and handoff bundles are not application source.
+deliverables/
 .env*
 !.env.example
 .vercel/

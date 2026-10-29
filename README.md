@@ -1,120 +1,291 @@
-# VoucherQuill — Snap. Check. Sheet.
+# VoucherQuill
 
-Previously named Bill2Sheet. Existing browser storage keys are retained so saved sheets and photos remain available on the same origin.
+A personal tool for turning handwritten payment vouchers into editable Excel records.
+Upload or capture a photo, review the reading beside the original, correct it, and export
+an Excel workbook or PDF. Handwriting recognition is assisted by Gemini and requires
+human review.
 
-React + Vite + Tailwind; server-only Gemini vision; IndexedDB photo queue/register; editable Excel and PDF exports. Only the foreground voucher is requested. All fields are optional. AI output must be checked against the photo; exact handwriting is not guaranteed.
+Public site: https://voucherquill.vercel.app/
 
-## Configure privately
+Previously named **Bill2Sheet**. The package name and browser storage keys retain that
+name to preserve existing local records. This is an owner-operated prototype, not a
+multi-user accounting service.
 
-Install Node.js 22.13 or later. Open a terminal in this folder and run `npm install`. Create `.env.local` (or edit the existing file; do not overwrite a working key):
+## Start here
 
-```dotenv
-GEMINI_API_KEY=your_private_AI_Studio_key
-GEMINI_MODEL=gemini-3.5-flash-lite
-```
+Requirements: Node.js **22.13.0 or later**, npm, and a Gemini API key with access to the
+configured model.
 
-No VITE_ prefix. Never commit or paste the key into chat. Both settings are required; there is no hard-coded model, allowlist or paid/provider fallback. The model above is documented at https://ai.google.dev/gemini-api/docs/models/gemini-3.5-flash-lite . Check your project's model access and quota. Model availability does not guarantee free access; keep billing disabled if you only want free quota.
+1. Run `npm ci` in the repository root.
+2. Create a private `.env.local` using [.env.example](.env.example) as the template.
+   Do not overwrite an existing working file.
+3. Set the server variables below.
+4. Run `npm run dev -- --port 5174`.
+5. Open the URL printed by Vite; it may choose a different port if that port is busy.
 
-## Test key and model before starting
+The Vite plugin mounts the same API handlers used in production. No separate backend
+process is needed. Actual loopback requests on the development server can read photos
+without the owner password. This exception is disabled on Vercel. A phone using a
+plain HTTP Wi-Fi address cannot use owner sign-in; use the HTTPS deployment.
 
-In this folder, load your private environment and run this single curl request. This checks model/key access, not handwriting accuracy. The subshell keeps settings out of later shell sessions; do not run with shell tracing enabled.
+### Environment variables
+
+| Variable | Purpose | Required |
+| --- | --- | --- |
+| `GEMINI_API_KEY` | Private Google API credential, used only by the server | Yes for reading |
+| `GEMINI_MODEL` | Model identifier, for example `gemini-3.5-flash-lite` | Yes for reading |
+| `GEMINI_FALLBACK_MODEL` | Optional alternate Gemini model for busy/quota retries; blank disables it | No |
+| `VOUCHERQUILL_ACCESS_PASSWORD` | Owner password, 16–256 characters | Yes on hosted deployments |
+| `VOUCHERQUILL_SESSION_SECRET` | Separate random session-encryption secret, 32–256 characters | Yes on hosted deployments |
+
+Use different values for the password and session secret; neither may equal the API
+key. Never prefix these with `VITE_`, put them in frontend code, or commit their values.
+Paste only the model identifier into `GEMINI_MODEL`: no quotes, `models/` prefix,
+display name, or `GEMINI_MODEL=` assignment.
+
+Local handlers reload the private environment file on each request. Vercel injects
+the environment at deployment time; changing a dashboard variable requires a new
+deployment. The local private file is not automatically sent to Vercel.
+
+## Technology and source map
+
+| Technology | How it is used |
+| --- | --- |
+| React 19 / React DOM | Workspace, editing dialogs, owner sign-in, and intro components |
+| Vite 7 / React plugin | Development server and production browser build |
+| CSS / Tailwind Vite integration | Layout and styling; most visual rules live in the CSS files |
+| IndexedDB / localStorage | Device-local photos, records, sheet list, and queue controls |
+| Gemini REST API / native fetch | Server-side handwriting extraction into JSON |
+| iron-session / Node crypto | Encrypted owner session cookie and password checks |
+| heic-to / canvas | HEIC fallback decoding and JPEG preparation |
+| SheetJS xlsx | Browser-generated Excel exports |
+| jsPDF / jspdf-autotable | Browser-generated PDF summaries |
+| Lucide React | Interface icons |
+| Node test runner / Vitest / Testing Library | Core and UI verification |
+
+`three` remains a dependency and `src/paper-toss-scene.js` contains an earlier scene
+implementation. The current intro does **not** use that scene: it uses two rendered
+hand images plus CSS animation. Do not treat unused files as the current rendering path.
+
+| Path | Responsibility |
+| --- | --- |
+| `index.html` | Document metadata, structured data, and refresh scroll reset |
+| `src/main.jsx` | React entry point; mounts App and PaperToss |
+| `src/App.jsx` | Workspace, uploads, register, review/edit, and export actions |
+| `src/BrandIntro.jsx`, `src/brand.css`, `src/styles.css` | Hero, navigation, and paper/ink UI |
+| `src/PaperToss.jsx`, `src/paper-toss.css` | Refresh intro: grip, release, flying paper, fade-out |
+| `public/images/paper-toss-hand-*.png` | Required hand images; preserve both files |
+| `src/OwnerAccess.jsx` | Sign-in form and session state |
+| `src/uploads.js`, `src/photo-type.js`, `src/image.js` | File selection, type detection, conversion, compression |
+| `src/register.js` | IndexedDB register operations |
+| `src/sheets.js` | Sheet metadata and active-sheet selection |
+| `src/api.js`, `src/queue-delay.js` | Persistent reading queue, retries, stop/resume, API calls |
+| `src/Cropper.jsx` | Crop/rotate and retry preparation |
+| `src/export.js`, `src/ExportReview.jsx` | Export generation and pre-export review |
+| `shared/gemini.js` | Extraction prompt and provider-response mapping |
+| `shared/voucher.js`, `shared/bill.js`, `shared/date-recovery.js` | Record rules, validation warnings, date handling |
+| `shared/voucher-export.js`, `shared/export-review.js` | Export data and review checks |
+| `api/read-voucher.js` | Protected Gemini endpoint, validation, limits, retries |
+| `api/session.js` | Session status, password sign-in, and sign-out |
+| `server/access.js` | Authentication rules, cookies, same-origin checks, rate counters |
+| `server/http.js` | Bounded JSON handling, response headers, credential redaction |
+| `server/local-env.js`, `vite.config.js` | Private local configuration and API middleware |
+| `public/robots.txt`, `public/sitemap.xml` | Search crawler instructions and public homepage URL |
+| `scripts/check-public-secrets.mjs` | Source/public and built-asset credential checks |
+| `tests/` | Core, storage, queue, export, authentication, and UI tests |
+
+## How the reading flow works
+
+1. The user selects photos or captures a photo. Each original is saved in IndexedDB
+   as a queued photo job before a successful reading exists.
+2. The browser decodes the image. HEIC conversion is loaded when native decoding fails.
+   Input is limited to 35 MB; the prepared JPEG has a longest side of at most 1600 px
+   and a target maximum of 1.8 MB.
+3. The client processes one queued photo at a time and posts JSON to
+   `/api/read-voucher` on the same origin. It waits 2–3 seconds between jobs.
+4. The server checks owner access, origin, content type, JPEG data, body size, and
+   application limits before calling Google. The browser never receives the API key.
+5. The server requests structured JSON for the foreground voucher. The prompt asks
+   it to ignore background vouchers and signatures and preserve uncertainty.
+6. The response is mapped into the local record. Empty or incomplete readings remain
+   failed photo jobs; readable results are saved as unreviewed records.
+7. The user compares the result with the photo, edits fields, or crops/rotates and
+   retries. Arithmetic mismatches and uncertain fields need review.
+8. Exports are created in the browser for the selected sheet. Excel contains voucher
+   summary and line-item sheets; PDF contains a summary. Downloading does not delete
+   saved records or update previously downloaded files.
+
+All fields are optional. Unknown numeric values stay blank rather than being presented
+as confirmed zero. Ambiguous dates and digits need manual review; do not assume the
+AI has resolved them correctly.
+
+Busy/quota responses (HTTP 503/429) allow up to seven provider calls, with increasing
+delays and an optional explicitly configured fallback model. Other HTTP errors are
+not automatically retried. Each provider request has a 20-second timeout; the client
+allows 240 seconds. Failed photos stay available for retry. Authentication and
+configuration failures pause processing. Stop/closing the connection cancels pending
+client/server work where possible; a request already received by Google may finish.
+
+## API contract
+
+| Endpoint | Method | Behavior |
+| --- | --- | --- |
+| `/api/session` | GET | Returns authentication/configuration status |
+| `/api/session` | POST | Accepts JSON `{ "password": "..." }`; establishes owner session |
+| `/api/session` | DELETE | Clears this browser's session cookie |
+| `/api/read-voucher` | GET | Returns safe configuration status; additional model diagnostics require authorization |
+| `/api/read-voucher` | POST | Accepts JSON `{ "image": "<base64 JPEG or JPEG data URL>" }`; returns mapped voucher JSON or a safe error |
+
+Owner sessions last up to eight hours. Hosted cookies are Secure, HttpOnly, and
+SameSite=Strict. Rotating the password or session secret invalidates existing sessions.
+Sign-out clears the cookie in the current browser; it does not clear saved voucher
+data or revoke a copied cookie elsewhere before expiry.
+
+## User data and privacy boundaries
+
+**The application does not fetch another visitor's register from a shared server database.**
+There is no server-hosted voucher database or endpoint for listing other users' records
+in this implementation.
+
+| Data | Location and access |
+| --- | --- |
+| Original photos and extracted records | IndexedDB, scoped to the browser profile and site origin |
+| Sheet names and active selection | localStorage on the same origin |
+| Photo submitted for reading | Sent through the server to Google Gemini |
+| Owner session | Encrypted cookie, separate from voucher storage |
+| Gemini credential and session configuration | Server environment only |
+| Downloaded Excel/PDF files | User's download destination; no longer managed by the app |
+
+This is **browser isolation, not account-based isolation**. Two people using the same
+browser profile and origin share the same local register. Signing out only disables
+hosted reading: existing records remain viewable/editable/exportable in that browser.
+Separate sheets organize records; they are not security boundaries.
+
+Records do not automatically sync between devices, browser profiles, localhost ports,
+or deployment origins. Clearing browser/site data can remove them. Export backups.
+
+Reading is not entirely offline or device-only: submitted photos and extracted content
+pass through Google. This README makes no claim about Google's retention, training,
+or data-use terms; review the applicable provider/account terms before using sensitive
+documents. Operational logging in the handler is limited to provider status, model,
+and attempt; hosting/provider infrastructure has its own logging behavior.
+
+There is one owner-access password, no public signup, no per-user accounts, and no
+tenant authorization model. Before introducing multiple accounts or cloud storage,
+add server-side ownership checks for every record and file, session/tenant isolation,
+and appropriate storage and deletion policies. Do not expose a shared record list.
+
+## Security controls and limits
+
+The server fails closed for reading when owner configuration is absent or invalid.
+It validates same-origin requests, limits request sizes, and redacts configured secret
+values from returned errors. The build scans public files and browser bundles for
+credential exposure.
+
+Current application counters are **per process**, not global across Vercel instances:
+six reads per minute, 120 per hour, two simultaneous reads per process, plus sign-in
+attempt limits. Use shared edge/WAF or durable limits and provider spending controls
+when opening access more widely.
+
+See [SECURITY.md](SECURITY.md) for the audit scope, controls, and remaining checks.
+No automated scan establishes that the whole application is secure.
+
+## Deployment to Vercel
+
+- Connect the intended Git repository and production branch.
+- Root Directory: the folder containing `package.json` (repository root for this layout).
+- Framework: Vite. Build: `npm run build`. Output: `dist`.
+- Configure all required environment variables for Production. Configure Preview
+  separately if you use it. Never add frontend prefixes to private credentials.
+- Deploy the latest source commit and verify the public production domain.
+
+Redeploying an old deployment rebuilds its old source; it does not automatically select
+the newest Git commit. Check the deployment commit before redeploying or promoting it.
+Variable changes need a new deployment. This repository edit does not publish itself.
+
+### Common failures
+
+| Symptom | Check |
+| --- | --- |
+| Old UI on the public domain | Production deployment commit and domain assignment |
+| Owner access not configured (503) | Both owner variables, lengths, distinct values, environment scope, then redeploy |
+| Photo reading is private | Enter the configured owner access password, not the API key or session secret |
+| Unexpected model name format (400) | Model identifier only; remove display names, prefixes, quotes, assignments |
+| Missing Gemini configuration | Both Gemini variables must be present in the running deployment |
+| Busy/quota error (429/503) | Provider quota, model availability, retry later |
+| Connection interrupted | Browser-to-server connection/timeout; inspect API response and runtime logs before blaming the provider |
+| Missing records on another device | Expected: storage is local to the browser and origin |
+
+`npm run check:env` prints the local project root and presence booleans, not credentials.
+A GET to the running `/api/read-voucher` reports safe status. Anonymous responses do not
+include all authorized diagnostics. Do not share private request headers or cookies.
+
+## Interface, refresh behavior, and SEO
+
+The current UI uses a black-and-white bill/paper style, a sidebar workspace, a readable
+hero, and responsive controls. The opening hand holds papers before releasing them.
+There is no skip-intro button. Reduced-motion preferences suppress the animation;
+image-load failure dismisses it instead of blocking the app.
+
+A browser refresh resets the page to the hero and clears a section hash so the browser
+does not restore a lower scroll position. Ordinary section-link navigation keeps its
+anchors. The reset runs only for reload navigation in `index.html`.
+
+The document includes a descriptive title, canonical URL, social metadata, and WebSite
+JSON-LD with the alternate name "Voucher Quill". The sitemap lists only the homepage;
+fragment sections are not separate pages. The robots file discourages API crawling;
+it is **not** access control. Authentication still protects reading.
+
+After deploying, verify the URL-prefix property in Google Search Console, submit
+`https://voucherquill.vercel.app/sitemap.xml`, and request homepage indexing. Metadata
+and sitemaps do not guarantee indexing or ranking. If the domain changes, update the
+canonical, social URL, structured data, robots sitemap URL, and sitemap together.
+
+## Recent changes
+
+These describe the current implementation, not a complete historical release log.
+
+| Area | Change |
+| --- | --- |
+| Branding | Bill2Sheet became VoucherQuill; legacy storage keys retained |
+| UI | Monochrome paper styling, revised hero/sidebar, larger controls and alignment fixes |
+| Intro | Grip/open hand assets and paper-flight animation; no skip button |
+| Refresh | Reload from a lower section now starts at the hero |
+| Storage/queue | Persistent photo jobs, saved sheets, review/edit, retry and stop/resume |
+| Reading | Server-only Gemini calls; explicit model configuration and bounded retries |
+| Access | Owner password and encrypted session; same-origin checks and request limits |
+| Secret handling | Build-time public/bundle scans and sanitized errors |
+| SEO | Canonical/social metadata, alternate name, robots file, homepage sitemap |
+| Handoff | This README documents setup, architecture, data boundaries, and failure recovery |
+
+## Checks and maintenance
 
 ```sh
-( set -a; . ./.env.local; set +a; curl --fail-with-body --silent --show-error --write-out '\nHTTP %{http_code}\n' "https://generativelanguage.googleapis.com/v1beta/models/${GEMINI_MODEL}:generateContent" --header 'Content-Type: application/json' --header "x-goog-api-key: ${GEMINI_API_KEY}" --data '{"contents":[{"parts":[{"text":"Return JSON with ok equal to true."}]}],"generationConfig":{"responseMimeType":"application/json","temperature":0}}' )
+npm test
+npm run test:ui
+npm run build
 ```
 
-HTTP 200 means the request succeeded. Otherwise Google returns its actual error: check model name/access for 404, key restrictions for 400/403, quota for 429. Never share request headers or the key.
+Tests cover provider contracts/errors, queue behavior, storage, export/review rules,
+authentication, and UI behavior. A successful build also runs public-secret checks.
+These do not establish real-world handwriting accuracy or prove every phone/HEIC
+combination works.
 
-## Run locally and on iPhone
+Before a release, test one non-sensitive voucher through the deployed flow: sign in,
+upload, inspect the original against the extracted fields, edit, export, refresh, and
+confirm the local record remains. Test a failed reading and retry as well. Inspect the
+exact deployment and its environment, not just localhost.
 
-```sh
-npm run dev -- --host 0.0.0.0 --port 5173
-```
+## Code and asset provenance
 
-Vite's server middleware runs the exact `/api/read-voucher` handler locally; no separate proxy or backend command is needed. Restart once after installing this update. The local API then rereads `.env.local` for each request. On the Mac open http://localhost:5173. On the iPhone, use your HTTPS deployment and sign in with the owner access password. The old plain-HTTP Wi-Fi URL cannot perform photo reading after the security update below. File-input camera capture works without relying on getUserMedia.
+This project contains custom application code developed with AI assistance and uses
+third-party packages. Package versions and sources are recorded in `package.json` and
+`package-lock.json`; each dependency retains its own license.
 
-## Vercel
+The hand images used by the opening animation were AI-generated. They live in
+`public/images/` and are required by `src/PaperToss.jsx`.
 
-Set the Vercel project Root Directory to `bill2sheet` (or the folder containing this package.json). Use Vite, build `npm run build`, output `dist`. Add GEMINI_API_KEY and GEMINI_MODEL in Vercel Settings → Environment Variables for the intended environment, then redeploy. `.env.local` is not uploaded. `/api/read-voucher.js` reads vouchers and `/api/session.js` manages owner access. Use the deployed HTTPS address on your phone; it does not require the Mac to stay on. This edit does not itself deploy your project.
-
-## Flow and review
-
-1. Take a photo or select multiple images. Original photos persist on this device as queue jobs, not successful vouchers.
-2. HEIC is decoded natively or converted to JPEG; images are scaled to at most 1600 pixels on the longest side and compressed before sending.
-3. Gemini reads the top voucher only, ignores signatures/background vouchers, and returns JSON. The Being line is included in particulars. Ambiguous digits stay null. A two-digit year stays null with the visible date in a review note because the century is not guessed; enter the full date after checking.
-4. Readable results populate vendor, date, numeric total and items with reviewed:false. All-null results remain failed photo jobs with Retry/Edit; no empty successful voucher is created.
-5. Unclear fields and row-total mismatches are red. Open Edit to compare the photo, crop/rotate and retry, change row amounts, and explicitly confirm resolved uncertainty. Save changes does not block on missing fields. Arithmetic mismatches remain red until corrected.
-6. Export includes only rows with voucher data. Excel has Vouchers (No., PAID TO, Date, AMOUNT (AED), Review notes) and Line Items. PDF uses the same summary columns. Numeric totals remain editable numbers; unknown amounts remain blank. No numeric amounts means NO AMOUNTS ENTERED, not a misleading zero.
-
-Queue pauses on provider/network errors; the real Google status/message appears beside the saved photo. Resume after fixing configuration/quota. No automatic cross-provider fallback. Keep the page open while reading; interrupted jobs resume when reopened.
-
-Register/photos persist in IndexedDB on the same browser and origin, including after refresh. They do not sync between devices or between a Wi-Fi URL and Vercel. Export backups before clearing browser data. Downloading does not clear the register. An already downloaded workbook is not automatically rewritten.
-
-## Checks
-
-`npm test`, `npm run test:ui`, `npm run build`.
-
-Automated checks cover provider contracts/errors, photo-queue pause/resume, blank-result rejection, 100 stored photos, numeric Excel round-trip and PDF pagination. Real handwriting accuracy and physical iPhone camera/HEIC capture still need a configured key and device test. Upload one voucher first; compare every digit, then try a batch and reopen the page before exporting.
-
-## Diagnose missing server variables
-
-The key check is in `api/read-voucher.js`. It expects exactly `GEMINI_API_KEY` and `GEMINI_MODEL`. `src/api.js` sends images to that endpoint and never reads the key. `server/local-env.js` loads the private file for Vite; it is not browser code. The Vercel function uses its injected process environment.
-
-Run `npm run check:env` in this project. It prints the exact project root and only true/false for each setting. Local loading reads `.env.local` relative to the source project, independent of the terminal working directory. Nonempty file values take precedence over inherited shell values; neither value is changed. Missing/empty file entries fall back to the process environment.
-
-After starting Vite, confirm the running server (not just the file) with:
-
-```sh
-curl --silent --show-error http://localhost:5173/api/read-voucher
-```
-
-The result has `variables.GEMINI_API_KEY` and `variables.GEMINI_MODEL` booleans, `configured`, and missing variable names. It never returns the key. Use the port shown by Vite if different. A 503 names missing variables. If the file check says true but the running endpoint says false, verify the URL/port and project copy, and stop/restart the old process.
-
-No separate dev proxy is needed: Vite handles `/api/read-voucher` on its own server port. The iPhone uses that same relative endpoint, not localhost on the phone.
-
-## Exact Vercel environment steps
-
-1. Open Vercel dashboard → your Bill2Sheet project → Settings → Environment Variables.
-2. Add `GEMINI_API_KEY` with your existing tested key. Select both Production and Preview. Save. Do not add a VITE_ prefix.
-3. Add `GEMINI_MODEL` with your existing tested model value. Select both Production and Preview. Save. Leave Preview branch scope unrestricted unless you deliberately need an override.
-4. Open Deployments. Choose the latest deployment with this updated source → three-dot menu → Redeploy. Redeploy Production and any Preview deployment you intend to test so each gets its scoped values. An older deployment does not acquire new variables automatically.
-5. Open `/api/read-voucher` on the exact deployment URL; both booleans should be true. Then retry the queued photo in the app.
-
-`.env.local` is ignored and is not uploaded to Vercel. Setting Production alone does not configure Preview. These edits do not deploy or change your Vercel settings automatically.
-
-Official reference: https://vercel.com/docs/environment-variables
-
-## Busy-model retries (local)
-
-Optional `.env.local` setting:
-
-```dotenv
-GEMINI_FALLBACK_MODEL=
-```
-
-Keep the existing GEMINI_API_KEY and GEMINI_MODEL. An empty/missing fallback means all attempts use the primary. No model is silently selected by the code. Both models use the same key and their respective project quotas.
-
-503/429 responses get up to six retries after the first attempt (seven calls maximum), alternating primary/fallback. Waits are approximately 2, 4, 8, 16, 20, 20 seconds, each with 0–499 ms jitter. Other HTTP errors are not automatically retried. Each provider call has a 20-second timeout; client timeout is 240 seconds to cover the bounded retry sequence. A timed-out provider call is kept as a failed photo rather than retried automatically.
-
-Requests use thinkingConfig.thinkingLevel low, maxOutputTokens 2000, temperature 0 and application/json output. All response text parts are joined. Production request logs contain only status, model and attempt. Keys, photos and extracted text are not logged.
-
-The client reads one voucher at a time, with 2–3 seconds between jobs. Exhausted busy/quota failures remain in Retry failed, while later jobs continue. Authentication/model-configuration failures pause the queue. Use Retry failed photos to queue failures again; Stop processing still preserves originals and prevents further work. Closing/stopping the client aborts server retries when the HTTP connection closes; work already received by Google may still finish.
-
-Restart the local server once after this update, then refresh the phone. Subsequent private environment edits are loaded on each request.
-
-## Owner access and API key protection (29 October 2026)
-
-The public page can be viewed without signing in. Hosted photo reading now requires an
-owner access password and encrypted session; the Gemini key stays on the server.
-Set `VOUCHERQUILL_ACCESS_PASSWORD` (16-256 characters) and a separate
-`VOUCHERQUILL_SESSION_SECRET` (32-256 characters) privately in the hosting environment,
-then redeploy. Do not reuse the Gemini key. No public signup is enabled.
-
-Direct local use through `localhost` on this Mac remains available. Phone access over
-plain Wi-Fi HTTP is now locked for reading; use the HTTPS deployment to sign in.
-Unconfigured deployments keep photo reading locked while editing and export remain usable.
-
-`npm run build` now checks public assets and browser bundles for credentials. See
-[SECURITY.md](SECURITY.md) for the audit, limits, and remaining deployment checks.
-Application rate counters are per process; configure shared edge/WAF limits for public
-hosting. They are not an account-wide quota or a substitute for provider billing controls.
+This document does not certify that every line or asset is unique or claim that no
+external code was used. No full provenance audit has been completed. Do not copy
+another user's private vouchers, credentials, or records into fixtures, documentation,
+screenshots, or marketing assets. Use consented material or clearly fictional samples.
