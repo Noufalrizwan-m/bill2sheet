@@ -69,3 +69,22 @@ test('editing a reading photo stops only that photo and opens a dialog',async()=
  expect(state.rows.find(row=>row.id==='reading-two').status).toBe('queued');
  expect(screen.getByLabelText('Quick take a voucher photo')).toBeTruthy();
 });
+
+
+test('stopped and failed photos appear in the not finished filter with the correct count',async()=>{
+ state.rows=[
+  {...emptyBill(),id:'done',filename:'done.jpg',vendor:'Complete vendor',status:'saved',reviewed:true},
+  {...emptyBill(),id:'stopped',filename:'stopped.jpg',status:'stopped'},
+  {...emptyBill(),id:'failed',filename:'failed.jpg',status:'error'},
+  {...emptyBill(),id:'paused',filename:'paused.jpg',status:'paused'},
+  {...emptyBill(),id:'loading',filename:'loading.jpg',status:'reading'}
+ ];
+ render(<App/>);
+ const filter=await screen.findByRole('button',{name:'Stopped / not finished, 3 vouchers'});
+ fireEvent.click(filter);
+ expect(screen.getByLabelText('Edit stopped.jpg')).toBeTruthy();
+ expect(screen.getByLabelText('Edit failed.jpg')).toBeTruthy();
+ expect(screen.getByLabelText('Edit paused.jpg')).toBeTruthy();
+ expect(screen.queryByLabelText('Edit loading.jpg')).toBeNull();
+ expect(screen.queryByLabelText('Edit done.jpg')).toBeNull();
+});
