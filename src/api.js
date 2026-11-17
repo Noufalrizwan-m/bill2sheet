@@ -20,6 +20,18 @@ function cancellable(task,signal){
 }
 export async function stopPhoto(id){
  await patchRecordIfStatus(id,['queued','reading'],{status:'stopped',reading_progress:null,error:null});
+ const record=await getRecord(id);
+ if(record?.original&&!record.preview){
+  try{const image=record.originalPrepared||await compressImage(record.original);await patchRecordIfStatus(id,['stopped'],{preview:image,originalPrepared:image});}catch{/* Retain the original photo even if this device cannot decode it. */}
+ }
+}
+export async function getCropSource(id){
+ const record=await getRecord(id);
+ if(!record?.original)throw new Error('The original photo is unavailable.');
+ if(record.originalPrepared)return record.originalPrepared;
+ const image=await compressImage(record.original);
+ await patchRecord(id,{originalPrepared:image});
+ return image;
 }
 export async function stopProcessing(){
  localStorage.setItem(pauseKey,'yes');
@@ -50,7 +62,7 @@ async function drain() {
           if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
           // Keep the JSON request below the hosting platform's request-body limit.
           if(ready.length && ready.reduce((sum,item)=>sum+item.image.length,0)+image.length>4_300_000){await patchRecordIfStatus(entry.id,['reading'],{status:'queued',reading_progress:null});break;}
-          if(await patchRecordIfStatus(entry.id,['reading'],{preview:image,reading_progress:'Waiting for Gemini to read the voucher…'}))ready.push({entry,image});
+          if(await patchRecordIfStatus(entry.id,['reading'],{preview:image,...(!entry.preparedImage?{originalPrepared:image}:{}),reading_progress:'Waiting for Gemini to read the voucher…'}))ready.push({entry,image});
         }catch(error){
           await patchRecordIfStatus(entry.id,['reading'],controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:'error',error:error.message});
           if(controller.signal.aborted)break;
@@ -106,7 +118,7 @@ export async function getRegister() {
 export async function uploadPhoto(entry) { const record = await addRecord(entry); void drain().catch(console.error); return record; }
 export async function uploadPhotos(entries) { for(const entry of entries)await addRecord(entry); void drain().catch(console.error); }
 export async function updateBill(id, bill) {
-  const { original, preview, photoUrl, ...fields } = bill;
+  const { original, originalPrepared, preview, photoUrl, ...fields } = bill;
   return patchRecord(id, { ...fields, recordType:hasVoucherData(fields)?'voucher':'photo', status:hasVoucherData(fields)?'saved':'error', error:hasVoucherData(fields)?null:'No voucher data entered. Photo kept for retry.', reviewed:true });
 }
 export async function deleteBill(id) { await removeRecord(id); if (urls.has(id)) URL.revokeObjectURL(urls.get(id)); urls.delete(id); }
