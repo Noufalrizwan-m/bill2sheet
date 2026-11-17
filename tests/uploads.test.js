@@ -22,3 +22,15 @@ test('returned camera file becomes a visible queued photo and can be selected tw
   assert.equal(first.preview, 'blob:test'); assert.notEqual(first.id, second.id);
   assert.deepEqual(makeUploads([], () => 'blob:test'), []);
 });
+
+test('exact duplicate photo bytes are skipped within a selection and against saved photos',async()=>{
+ const {uniquePhotos}=await import('../src/uploads.js');
+ const saved=new Blob(['same']);
+ const duplicate=new Blob(['same']);
+ const first=new Blob(['new!']);
+ const repeated=new Blob(['new!']);
+ const sameSizeDifferent=new Blob(['else']);
+ const result=await uniquePhotos([duplicate,first,repeated,sameSizeDifferent],[saved]);
+ assert.deepEqual(result.unique,[first,sameSizeDifferent]);
+ assert.deepEqual(result.duplicates,[duplicate,repeated]);
+});

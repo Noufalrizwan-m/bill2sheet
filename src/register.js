@@ -27,7 +27,7 @@ export const addRecord = entry => transaction('readwrite', (store, done) => {
   store.get(entry.id).onsuccess = event => {
     if (event.target.result) { done(event.target.result); return; }
     const record = { ...emptyBill(), id: entry.id, filename: entry.name, original: entry.file,
-      sheetId:entry.sheetId||'original', recordType:'photo', status: 'queued', reader: 'gemini', reviewed: false, createdAt: new Date().toISOString() };
+      sheetId:entry.sheetId||'original', recordType:'photo', status: 'queued', reader: 'gemini', reviewed: false, createdAt: new Date(entry.createdAt ?? Date.now()).toISOString() };
     store.add(record); done(record);
   };
 });
