@@ -82,3 +82,17 @@ test('stopping one photo in a running batch keeps its manual edit while the othe
   expect((await getRecord('individual-two')).vendor).toBe('Other result');
  }finally{for(const b of await listRecords())await removeRecord(b.id);vi.unstubAllGlobals();}
 });
+
+test('stopped photos get a preview and repeated crops use the original photo',async()=>{
+ const {getCropSource,cropAndRetry,stopPhoto,stopProcessing}=await import('../src/api.js');
+ try{
+  await stopProcessing();
+  await uploadPhoto({id:'crop-original',file:new Blob(['photo']),name:'photo.jpg'});
+  await stopPhoto('crop-original');
+  const stopped=await getRecord('crop-original');
+  expect(stopped.status).toBe('stopped');expect(stopped.preview).toBe('data:image/jpeg;base64,/9j/4AAQ/9k=');
+  await cropAndRetry('crop-original','data:image/jpeg;base64,cropped','gemini');
+  expect(await getCropSource('crop-original')).toBe('data:image/jpeg;base64,/9j/4AAQ/9k=');
+  expect((await getRecord('crop-original')).preview).toBe('data:image/jpeg;base64,cropped');
+ }finally{for(const b of await listRecords())await removeRecord(b.id);localStorage.clear();}
+});
