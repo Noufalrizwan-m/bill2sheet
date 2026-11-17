@@ -19,3 +19,30 @@ export function makeUploads(files, createPreview = file => URL.createObjectURL(f
     id: createId(), file, preview: createPreview(file), name: file.name || 'Camera photo', status: 'queued',
   }));
 }
+
+// Compare the original bytes so similarly named photos are never treated as duplicates.
+async function photoBytes(file) {
+  if (typeof file.arrayBuffer === 'function') return new Uint8Array(await file.arrayBuffer());
+  return new Uint8Array(await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result);
+    reader.onerror = () => reject(new Error('Could not check a photo for duplicates.'));
+    reader.readAsArrayBuffer(file);
+  }));
+}
+export async function uniquePhotos(files, existing = []) {
+  const candidates = existing.filter(file => file && typeof file.size === 'number');
+  const unique = [], duplicates = [];
+  for (const file of files) {
+    let duplicate = false, bytes;
+    for (const candidate of candidates) {
+      if (file.size !== candidate.size) continue;
+      bytes ??= await photoBytes(file);
+      const other = await photoBytes(candidate);
+      if (bytes.every((byte, index) => byte === other[index])) { duplicate = true; break; }
+    }
+    if (duplicate) duplicates.push(file);
+    else { unique.push(file); candidates.push(file); }
+  }
+  return {unique, duplicates};
+}
