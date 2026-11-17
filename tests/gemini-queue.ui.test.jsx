@@ -65,3 +65,20 @@ test('queued photos are sent together and mapped to their own rows',async()=>{
   expect((await getRecord('batch-one')).vendor).toBe('Vendor 1');expect((await getRecord('batch-two')).vendor).toBe('Vendor 2');
  }finally{for(const b of await listRecords())await removeRecord(b.id);vi.unstubAllGlobals();}
 });
+
+test('stopping one photo in a running batch keeps its manual edit while the other finishes',async()=>{
+ const {uploadPhotos,stopPhoto,updateBill}=await import('../src/api.js');
+ let finish;
+ const fetch=vi.fn(()=>new Promise(resolve=>{finish=resolve;}));vi.stubGlobal('fetch',fetch);
+ try{
+  await uploadPhotos([{id:'individual-one',file:new Blob(['one'])},{id:'individual-two',file:new Blob(['two'])}]);
+  await waitFor(()=>expect(fetch).toHaveBeenCalledOnce());
+  await stopPhoto('individual-one');
+  const stopped=await getRecord('individual-one');expect(stopped.status).toBe('stopped');
+  await updateBill('individual-one',{...stopped,vendor:'My edit',total:8});
+  finish({ok:true,json:async()=>[{voucher_date:null,paid_to:'Old result',particulars:null,row_amounts:[],total:10,unclear:[]},{voucher_date:null,paid_to:'Other result',particulars:null,row_amounts:[],total:20,unclear:[]}]});
+  await waitFor(async()=>expect((await getRecord('individual-two')).status).toBe('saved'));
+  expect((await getRecord('individual-one')).vendor).toBe('My edit');
+  expect((await getRecord('individual-two')).vendor).toBe('Other result');
+ }finally{for(const b of await listRecords())await removeRecord(b.id);vi.unstubAllGlobals();}
+});
