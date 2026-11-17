@@ -82,3 +82,11 @@ test('retry stops immediately after a successful response',async()=>{
  let calls=0;const response=res();await createGeminiHandler({env:{GEMINI_API_KEY:'secret',GEMINI_MODEL:'primary'},wait:async()=>{},log:()=>{},request:async()=>++calls===1?{ok:false,status:503,text:async()=>''}:success(voucher)})(req(),response);
  assert.equal(calls,2);assert.equal(response.statusCode,200);
 });
+test('multiple photos share one provider request and results remain in order',async()=>{
+ let input,calls=0;const second={...voucher,paid_to:'Second vendor'};
+ const handler=createGeminiHandler({env:{GEMINI_API_KEY:'test',GEMINI_MODEL},log:()=>{},request:async(_url,options)=>{calls++;input=JSON.parse(options.body);return success([voucher,second]);}});
+ const response=res();await handler(req({images:[image,image]}),response);
+ assert.equal(response.statusCode,200);assert.equal(calls,1);assert.deepEqual(response.data.map(v=>v.paid_to),['Gas Both Camp','Second vendor']);
+ assert.equal(input.contents[0].parts.filter(part=>part.inlineData).length,2);
+ const invalid=res();await createGeminiHandler({env:{GEMINI_API_KEY:'test',GEMINI_MODEL},log:()=>{},request:async()=>success([voucher])})(req({images:[image,image]}),invalid);assert.equal(invalid.statusCode,422);
+});

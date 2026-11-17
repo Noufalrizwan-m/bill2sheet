@@ -7,7 +7,7 @@ const state=vi.hoisted(()=>({rows:[],outbox:[]}));
 vi.mock('../src/outbox.js',()=>({listOutbox:async()=>state.outbox,queuePhotos:async entries=>{state.outbox.push(...entries);},removeOutbox:async id=>{state.outbox=state.outbox.filter(e=>e.id!==id);}}));
 vi.mock('../src/api.js',()=>({
  getReaderStatus:async()=>true,getGeminiStatus:async()=>({configured:false}),getRegister:async()=>({bills:[...state.rows],readerAvailable:true}),importLegacy:async()=>{},
- uploadPhoto:async entry=>{if(!state.rows.some(b=>b.id===entry.id))state.rows.push({...emptyBill(),id:entry.id,filename:entry.name,vendor:'Gas Both Camp',date:'27-06-2026',total:1725,status:'saved'});},
+ uploadPhotos:async entries=>{for(const entry of entries)if(!state.rows.some(b=>b.id===entry.id))state.rows.push({...emptyBill(),id:entry.id,filename:entry.name,vendor:'Gas Both Camp',date:'27-06-2026',total:1725,status:'saved'});},
  updateBill:async(id,bill)=>{state.rows=state.rows.map(b=>b.id===id?{...bill}:b);},deleteBill:async id=>{state.rows=state.rows.filter(b=>b.id!==id);},retryBill:async()=>{}
 }));
 import App from '../src/App.jsx';

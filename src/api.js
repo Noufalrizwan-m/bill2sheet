@@ -34,30 +34,49 @@ async function drain() {
       const records=(await listRecords()).filter(b=>inSheet(b,activeSheetId()));
       if(isStopped())break;
       const paused=records.some(b=>b.status==='paused');
-      const entry=records.find(b=>b.status==='queued'&&!paused); 
-      if (!entry) break;
+      const entries=paused?[]:records.filter(b=>b.status==='queued').slice(0,3);
+      if (!entries.length) break;
       const controller=new AbortController(); activeController=controller;
-      await patchRecord(entry.id, { status: 'reading', reading_progress:'Preparing photo…' });
-      try {
+      const ready=[];
+      for(const entry of entries){
+        await patchRecord(entry.id,{status:'reading',reading_progress:'Preparing photo…'});
+        try{
+          if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
+          if(!entry.original)throw new Error('Original photo unavailable. Enter the details manually.');
+          const image=entry.preparedImage||await cancellable(compressImage(entry.original),controller.signal);
+          if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
+          // Keep the JSON request below the hosting platform's request-body limit.
+          if(ready.length && ready.reduce((sum,item)=>sum+item.image.length,0)+image.length>4_300_000){await patchRecord(entry.id,{status:'queued',reading_progress:null});break;}
+          await patchRecord(entry.id,{preview:image,reading_progress:'Waiting for Gemini to read the voucher…'});
+          ready.push({entry,image});
+        }catch(error){
+          await patchRecord(entry.id,controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:'error',error:error.message});
+          if(controller.signal.aborted)break;
+        }
+      }
+      try{
         if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
-        if (!entry.original) throw new Error('Original photo unavailable. Enter the details manually.');
-        const image = entry.preparedImage || await cancellable(compressImage(entry.original),controller.signal);
-        if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
-        await patchRecord(entry.id, { preview: image, reading_progress:'Waiting for Gemini to read the voucher…' });
-        let response;
-        try{response=await fetch('/api/read-voucher',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({image}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(240000)])});}
-        catch{throw Object.assign(new Error('Gemini connection interrupted. Photo saved; retry when online.'),{pauseQueue:true});}
-        let data;try{data=await response.json();}catch{throw Object.assign(new Error(`Server HTTP ${response.status}: invalid JSON response. Retry when the server is available.`),{pauseQueue:true});}
-        if(data.authenticationRequired)window.dispatchEvent(new Event('voucherquill-auth-required'));
-        if(!response.ok)throw Object.assign(new Error(`Gemini ${data.status||response.status}: ${data.error||'Reading failed'}`),{pauseQueue:data.pauseQueue});
-        if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
-        const result=mapGeminiVoucher(data);
-        if(!hasVoucherData(result.bill))throw new Error(`No readable voucher data. ${(data.unclear||[]).map(u=>u.note).join(' ')} Crop the top voucher and retry, or enter the details manually.`);
-        await patchRecord(entry.id, { ...result.bill, recordType:'voucher', raw_text: result.text, status: 'saved', error:null, reviewed: false,
-          recognition_note: result.bill.recognition_note || 'Gemini reading: check handwritten values against the photo.' });
-      } catch (error) {
-        if(controller.signal.aborted){await patchRecord(entry.id,{status:'queued',reading_progress:null,error:null});break;}
-        await patchRecord(entry.id, { status: error.pauseQueue?'paused':'error', error: error.message });
+        if(ready.length){
+          let response;
+          try{response=await fetch('/api/read-voucher',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({images:ready.map(item=>item.image)}),signal:AbortSignal.any([controller.signal,AbortSignal.timeout(240000)])});}
+          catch{throw Object.assign(new Error('Gemini connection interrupted. Photos saved; retry when online.'),{pauseQueue:true});}
+          let data;try{data=await response.json();}catch{throw Object.assign(new Error(`Server HTTP ${response.status}: invalid JSON response. Retry when the server is available.`),{pauseQueue:true});}
+          if(data.authenticationRequired)window.dispatchEvent(new Event('voucherquill-auth-required'));
+          if(!response.ok)throw Object.assign(new Error(`Gemini ${data.status||response.status}: ${data.error||'Reading failed'}`),{pauseQueue:data.pauseQueue});
+          if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
+          if(!Array.isArray(data)||data.length!==ready.length)throw new Error('Gemini returned an incomplete batch. Retry the saved photos.');
+          for(let i=0;i<ready.length;i++){
+            const {entry}=ready[i];
+            try{
+              const result=mapGeminiVoucher(data[i]);
+              if(!hasVoucherData(result.bill))throw new Error(`No readable voucher data. ${(data[i].unclear||[]).map(u=>u.note).join(' ')} Crop the top voucher and retry, or enter the details manually.`);
+              await patchRecord(entry.id,{...result.bill,recordType:'voucher',raw_text:result.text,status:'saved',error:null,reviewed:false,recognition_note:result.bill.recognition_note||'Gemini reading: check handwritten values against the photo.'});
+            }catch(error){await patchRecord(entry.id,{status:'error',error:error.message});}
+          }
+        }
+      }catch(error){
+        for(const {entry} of ready)await patchRecord(entry.id,controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:error.pauseQueue?'paused':'error',error:error.message});
+        if(controller.signal.aborted)break;
       }
       if(!isStopped())await waitBetweenPhotos();
     }
@@ -83,6 +102,7 @@ export async function getRegister() {
   return { bills, readerAvailable: true, processingStopped:isStopped() };
 }
 export async function uploadPhoto(entry) { const record = await addRecord(entry); void drain().catch(console.error); return record; }
+export async function uploadPhotos(entries) { for(const entry of entries)await addRecord(entry); void drain().catch(console.error); }
 export async function updateBill(id, bill) {
   const { original, preview, photoUrl, ...fields } = bill;
   return patchRecord(id, { ...fields, recordType:hasVoucherData(fields)?'voucher':'photo', status:hasVoucherData(fields)?'saved':'error', error:hasVoucherData(fields)?null:'No voucher data entered. Photo kept for retry.', reviewed:true });

@@ -10,7 +10,7 @@ import { voucherWarnings,hasVoucherData } from '../shared/voucher.js';
 import { downloadVoucherPDF, downloadVoucherExcel } from '../shared/voucher-export.js';
 import { createId, isImage } from './uploads.js';
 import { listOutbox, queuePhotos, removeOutbox } from './outbox.js';
-import { getRegister, uploadPhoto, updateBill, deleteBill, retryBill, importLegacy, cropAndRetry, getGeminiStatus, stopProcessing, resumeProcessing, retryFailed } from './api.js';
+import { getRegister, uploadPhotos, updateBill, deleteBill, retryBill, importLegacy, cropAndRetry, getGeminiStatus, stopProcessing, resumeProcessing, retryFailed } from './api.js';
 import Cropper from './Cropper.jsx';
 import { loadBills } from './storage.js';
 
@@ -43,7 +43,7 @@ export default function App(){
   async function refresh(){try{const data=await getRegister();if(alive.current){setBills(data.bills);setProcessingStopped(Boolean(data.processingStopped));setReaderAvailable(data.readerAvailable);setConnected(true);}}catch{if(alive.current)setConnected(false);}finally{if(alive.current)setLoading(false);}}
   async function sendWaiting(){
     if(busy.current)return;busy.current=true;setUploading(true);
-    try{let pending=await listOutbox();const hadPending=pending.length>0;setOutboxCount(pending.length);while(pending.length){const entry=pending[0];if(!alive.current)break;await uploadPhoto(entry);await removeOutbox(entry.id);setOutboxCount(count=>Math.max(0,count-1));await refresh();pending=await listOutbox();}if(hadPending&&!pending.length)setNotice('Photos saved on this device. Keep this page open while reading; unfinished photos resume when you return.');}
+    try{let pending=await listOutbox();const hadPending=pending.length>0;setOutboxCount(pending.length);while(pending.length){if(!alive.current)break;await uploadPhotos(pending);for(const entry of pending){await removeOutbox(entry.id);setOutboxCount(count=>Math.max(0,count-1));}await refresh();pending=await listOutbox();}if(hadPending&&!pending.length)setNotice('Photos saved on this device. Keep this page open while reading; unfinished photos resume when you return.');}
     catch(error){setError(`Upload paused. Your selected photos remain on this device. ${error.message}`);}
     finally{busy.current=false;if(alive.current)setUploading(false);}
   }

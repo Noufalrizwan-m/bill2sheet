@@ -14,7 +14,7 @@ test('Gemini quota pauses queued photos; explicit resume fills each saved row wi
   await uploadPhoto({id:'gemini-next',file:new Blob(['photo']),name:'next.jpg',reader:'gemini'});
   await waitFor(async()=>expect((await getRecord('gemini-first')).status).toBe('paused'));
   await getRegister();expect(fetch).toHaveBeenCalledTimes(1);expect((await getRecord('gemini-next')).status).toBe('queued');
-  fetch.mockImplementation(async()=>({ok:true,json:async()=>({voucher_date:'27-06-2026',paid_to:'Gas Both Camp',particulars:null,row_amounts:[1725],total:1725,unclear:[]})}));
+  fetch.mockImplementation(async(_url,options)=>({ok:true,json:async()=>JSON.parse(options.body).images.map(()=>({voucher_date:'27-06-2026',paid_to:'Gas Both Camp',particulars:null,row_amounts:[1725],total:1725,unclear:[]}))}));
   await retryBill('gemini-first','gemini');
   await waitFor(async()=>expect((await getRecord('gemini-next')).status).toBe('saved'),{timeout:8000});
   const rows=await listRecords();expect(rows).toHaveLength(2);expect(rows.every(b=>b.total===1725&&b.vendor==='Gas Both Camp')).toBe(true);
@@ -22,7 +22,7 @@ test('Gemini quota pauses queued photos; explicit resume fills each saved row wi
  }finally{for(const b of await listRecords())await removeRecord(b.id);vi.unstubAllGlobals();}
 });
 test('all-null reading stays a failed photo, never a saved voucher',async()=>{
- vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>({voucher_date:null,paid_to:null,particulars:null,row_amounts:[],total:null,unclear:[{field:'total',note:'Unreadable'}]})})));
+ vi.stubGlobal('fetch',vi.fn(async()=>({ok:true,json:async()=>[{voucher_date:null,paid_to:null,particulars:null,row_amounts:[],total:null,unclear:[{field:'total',note:'Unreadable'}]}]})));
  try{
  await uploadPhoto({id:'blank-photo',file:new Blob(['photo']),name:'blank.jpg'});
  await waitFor(async()=>expect((await getRecord('blank-photo')).status).toBe('error'));
@@ -46,10 +46,22 @@ test('stop aborts active request, retains photos and prevents polling from resta
   expect(await listRecords()).toHaveLength(2);
   expect(request).toHaveBeenCalledOnce();
   await removeRecord('stop-second');
-  request.mockImplementation(async()=>({ok:true,json:async()=>({voucher_date:null,paid_to:'Test',particulars:null,row_amounts:[10],total:10,unclear:[]})}));
+  request.mockImplementation(async()=>({ok:true,json:async()=>[{voucher_date:null,paid_to:'Test',particulars:null,row_amounts:[10],total:10,unclear:[]}]}));
   await resumeProcessing();
   await waitFor(async()=>expect((await getRecord('stop-first')).status).toBe('saved'),{timeout:8000});
   expect((await getRecord('stop-first')).total).toBe(10);
   expect(await listRecords()).toHaveLength(1);
  }finally{for(const b of await listRecords())await removeRecord(b.id);localStorage.clear();vi.unstubAllGlobals();}
+});
+
+test('queued photos are sent together and mapped to their own rows',async()=>{
+ const {uploadPhotos}=await import('../src/api.js');
+ const fetch=vi.fn(async(_url,options)=>({ok:true,json:async()=>JSON.parse(options.body).images.map((_,i)=>({voucher_date:null,paid_to:`Vendor ${i+1}`,particulars:null,row_amounts:[],total:i+1,unclear:[]}))}));
+ vi.stubGlobal('fetch',fetch);
+ try{
+  await uploadPhotos([{id:'batch-one',file:new Blob(['one'])},{id:'batch-two',file:new Blob(['two'])}]);
+  await waitFor(async()=>expect((await getRecord('batch-two')).status).toBe('saved'));
+  expect(fetch).toHaveBeenCalledOnce();expect(JSON.parse(fetch.mock.calls[0][1].body).images).toHaveLength(2);
+  expect((await getRecord('batch-one')).vendor).toBe('Vendor 1');expect((await getRecord('batch-two')).vendor).toBe('Vendor 2');
+ }finally{for(const b of await listRecords())await removeRecord(b.id);vi.unstubAllGlobals();}
 });
