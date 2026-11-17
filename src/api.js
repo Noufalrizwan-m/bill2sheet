@@ -1,4 +1,4 @@
-import { listRecords, getRecord, addRecord, patchRecord, removeRecord, importRecords } from './register.js';
+import { listRecords, getRecord, addRecord, patchRecord, patchRecordIfStatus, removeRecord, importRecords } from './register.js';
 import {waitBetweenPhotos} from './queue-delay.js';
 import { compressImage } from './image.js';
 import {mapGeminiVoucher} from '../shared/gemini.js';
@@ -17,6 +17,9 @@ function cancellable(task,signal){
   signal.addEventListener('abort',abort,{once:true});
   Promise.resolve(task).then(resolve,reject).finally(()=>signal.removeEventListener('abort',abort));
  });
+}
+export async function stopPhoto(id){
+ await patchRecordIfStatus(id,['queued','reading'],{status:'stopped',reading_progress:null,error:null});
 }
 export async function stopProcessing(){
  localStorage.setItem(pauseKey,'yes');
@@ -39,18 +42,17 @@ async function drain() {
       const controller=new AbortController(); activeController=controller;
       const ready=[];
       for(const entry of entries){
-        await patchRecord(entry.id,{status:'reading',reading_progress:'Preparing photo…'});
+        if(!await patchRecordIfStatus(entry.id,['queued'],{status:'reading',reading_progress:'Preparing photo…'}))continue;
         try{
           if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
           if(!entry.original)throw new Error('Original photo unavailable. Enter the details manually.');
           const image=entry.preparedImage||await cancellable(compressImage(entry.original),controller.signal);
           if(controller.signal.aborted)throw new DOMException('Processing stopped','AbortError');
           // Keep the JSON request below the hosting platform's request-body limit.
-          if(ready.length && ready.reduce((sum,item)=>sum+item.image.length,0)+image.length>4_300_000){await patchRecord(entry.id,{status:'queued',reading_progress:null});break;}
-          await patchRecord(entry.id,{preview:image,reading_progress:'Waiting for Gemini to read the voucher…'});
-          ready.push({entry,image});
+          if(ready.length && ready.reduce((sum,item)=>sum+item.image.length,0)+image.length>4_300_000){await patchRecordIfStatus(entry.id,['reading'],{status:'queued',reading_progress:null});break;}
+          if(await patchRecordIfStatus(entry.id,['reading'],{preview:image,reading_progress:'Waiting for Gemini to read the voucher…'}))ready.push({entry,image});
         }catch(error){
-          await patchRecord(entry.id,controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:'error',error:error.message});
+          await patchRecordIfStatus(entry.id,['reading'],controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:'error',error:error.message});
           if(controller.signal.aborted)break;
         }
       }
@@ -70,12 +72,12 @@ async function drain() {
             try{
               const result=mapGeminiVoucher(data[i]);
               if(!hasVoucherData(result.bill))throw new Error(`No readable voucher data. ${(data[i].unclear||[]).map(u=>u.note).join(' ')} Crop the top voucher and retry, or enter the details manually.`);
-              await patchRecord(entry.id,{...result.bill,recordType:'voucher',raw_text:result.text,status:'saved',error:null,reviewed:false,recognition_note:result.bill.recognition_note||'Gemini reading: check handwritten values against the photo.'});
-            }catch(error){await patchRecord(entry.id,{status:'error',error:error.message});}
+              await patchRecordIfStatus(entry.id,['reading'],{...result.bill,recordType:'voucher',raw_text:result.text,status:'saved',error:null,reviewed:false,recognition_note:result.bill.recognition_note||'Gemini reading: check handwritten values against the photo.'});
+            }catch(error){await patchRecordIfStatus(entry.id,['reading'],{status:'error',error:error.message});}
           }
         }
       }catch(error){
-        for(const {entry} of ready)await patchRecord(entry.id,controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:error.pauseQueue?'paused':'error',error:error.message});
+        for(const {entry} of ready)await patchRecordIfStatus(entry.id,['reading'],controller.signal.aborted?{status:'queued',reading_progress:null,error:null}:{status:error.pauseQueue?'paused':'error',error:error.message});
         if(controller.signal.aborted)break;
       }
       if(!isStopped())await waitBetweenPhotos();

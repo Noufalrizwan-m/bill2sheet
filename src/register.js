@@ -40,6 +40,17 @@ export const patchRecord = (id, values) => transaction('readwrite', (store, done
     store.put(record); done(record);
   };
 });
+// Update only while the record is still in the expected state. This keeps a
+// stopped or manually edited photo safe from a late batch response.
+export const patchRecordIfStatus = (id, statuses, values) => transaction('readwrite', (store, done) => {
+  store.get(id).onsuccess = event => {
+    const previous = event.target.result;
+    if (!previous || !statuses.includes(previous.status)) { done(false); return; }
+    const record = {...previous, ...values, id};
+    delete record.photoUrl;
+    store.put(record); done(true);
+  };
+});
 export const removeRecord = id => transaction('readwrite', store => store.delete(id));
 export const importRecords = records => transaction('readwrite', store => {
   for (const record of records) store.get(record.id).onsuccess = event => {

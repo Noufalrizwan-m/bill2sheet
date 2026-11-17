@@ -8,6 +8,7 @@ vi.mock('../src/outbox.js',()=>({listOutbox:async()=>state.outbox,queuePhotos:as
 vi.mock('../src/api.js',()=>({
  getReaderStatus:async()=>true,getGeminiStatus:async()=>({configured:false}),getRegister:async()=>({bills:[...state.rows],readerAvailable:true}),importLegacy:async()=>{},
  uploadPhotos:async entries=>{for(const entry of entries)if(!state.rows.some(b=>b.id===entry.id))state.rows.push({...emptyBill(),id:entry.id,filename:entry.name,vendor:'Gas Both Camp',date:'27-06-2026',total:1725,status:'saved'});},
+ stopPhoto:async id=>{state.rows=state.rows.map(b=>b.id===id?{...b,status:'stopped'}:b);},
  updateBill:async(id,bill)=>{state.rows=state.rows.map(b=>b.id===id?{...bill}:b);},deleteBill:async id=>{state.rows=state.rows.filter(b=>b.id!==id);},retryBill:async()=>{}
 }));
 import App from '../src/App.jsx';
@@ -56,4 +57,15 @@ test('dropping a photo saves it through the existing photo queue',async()=>{
  fireEvent.drop(capture,{dataTransfer:{files:[new File(['photo'],'dropped.jpg',{type:'image/jpeg'})]}});
  await waitFor(()=>expect(state.rows).toHaveLength(1));
  expect(state.rows[0].filename).toBe('dropped.jpg');
+});
+
+
+test('editing a reading photo stops only that photo and opens a dialog',async()=>{
+ state.rows=[{...emptyBill(),id:'reading-one',filename:'one.jpg',status:'reading'},{...emptyBill(),id:'reading-two',filename:'two.jpg',status:'queued'}];
+ render(<App/>);
+ fireEvent.click(await screen.findByLabelText('Edit one.jpg'));
+ await waitFor(()=>expect(screen.getByRole('dialog',{name:'Edit voucher'})).toBeTruthy());
+ expect(state.rows.find(row=>row.id==='reading-one').status).toBe('stopped');
+ expect(state.rows.find(row=>row.id==='reading-two').status).toBe('queued');
+ expect(screen.getByLabelText('Quick take a voucher photo')).toBeTruthy();
 });
